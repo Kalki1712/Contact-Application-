@@ -244,6 +244,9 @@ useEffect(() => {
     setPage(0);
   };
 
+
+  console.log("Rendering users...");  
+  
   return (
     <>
     
