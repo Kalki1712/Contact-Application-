@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   TextField,
   Button,
@@ -12,7 +13,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Paper, 
+  Paper,
   Select,
   MenuItem,
 } from "@mui/material";
@@ -20,7 +21,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TablePagination from "@mui/material/TablePagination";
 import { useNavigate } from "react-router-dom";
 import Autocomplete from "@mui/material/Autocomplete";
-import axios from "axios";
+import axios from "../axiosInstance";
 import { Country, State, City } from "country-state-city";
 
 const countryCodeMap = { India: "+91", USA: "+1", UK: "+44" };
@@ -38,16 +39,18 @@ const Users = () => {
   const [statesList, setStatesList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
 
-  const [page, setPage] = useState(0); 
+  const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [total, setTotal] = useState(0);
 
+ 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const [loggedUserId] = useState(() => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  return user?.id;
-});
-
+    const user = JSON.parse(localStorage.getItem("user"));
+    return user?.id;
+  });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -59,67 +62,51 @@ const Users = () => {
     state: "",
     city: "",
     address: "",
-    image: "",
+    image: null,
     imageName: "",
   });
 
   const [errors, setErrors] = useState({});
 
-  const API_URL = "http://localhost:5000/users";
+  const API_URL = "/users";
 
+  useEffect(() => {
+    const loadUsers = async () => {
+      if (!loggedUserId) return;
+      try {
+        const res = await axios.get(
+          `${API_URL}/${loggedUserId}?page=${page + 1}&limit=${rowsPerPage}&search=${searchTerm}`
+        );
+        setUsers(res.data.users || []);
+        setTotal(res.data.total || 0);
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    };
 
-  const loadUsers = async () => {
-  if (!loggedUserId) return;
+    loadUsers();
+    setCountries(Country.getAllCountries());
+  }, [loggedUserId, page, rowsPerPage, searchTerm]);
 
-  try {
-    const res = await axios.get(
-      `${API_URL}/${loggedUserId}?page=${page + 1}&limit=${rowsPerPage}&search=${searchTerm}`
-    );
+  const refreshUsers = async () => {
+    if (!loggedUserId) return;
+    try {
+      const res = await axios.get(
+        `${API_URL}/${loggedUserId}?page=${page + 1}&limit=${rowsPerPage}&search=${searchTerm}`
+      );
+      setUsers(res.data.users || []);
+      setTotal(res.data.total || 0);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
 
-    setUsers(res.data.users || []);
-    setTotal(res.data.total || 0);
-  } catch (err) {
-    console.error("Fetch error:", err);
-  }
-};
-
-
-useEffect(() => {
-  loadUsers();
-  setCountries(Country.getAllCountries());
-}, [loggedUserId, page, rowsPerPage, searchTerm]);
-
-  
-//   useEffect(() => {
-//   if (!loggedUserId) return;
-
-//   const loadUsers = async () => {
-//     try {
-//       const res = await axios.get(
-//         `${API_URL}/${loggedUserId}?page=${page + 1}&limit=${rowsPerPage}&search=${searchTerm}`
-//       );
-
-//       setUsers(res.data.users || []);
-//       setTotal(res.data.total || 0);
-//     } catch (err) {
-//       console.error("Fetch error:", err);
-//     }
-//   };
-
-//   loadUsers();
-//   setCountries(Country.getAllCountries());
-// }, [loggedUserId, page, rowsPerPage, searchTerm]);
-
-
-  console.log("Fetching users...");
-
-   useEffect(() => {
+  useEffect(() => {
     if (!formData.country) {
       setStatesList([]);
       setCitiesList([]);
       return;
     }
-
     const selectedCountry = countries.find(c => c.name === formData.country);
     if (!selectedCountry) return;
 
@@ -144,8 +131,6 @@ useEffect(() => {
     }
   }, [formData.country, formData.state, countries]);
 
-
-
   const handleOpenAdd = () => {
     setIsEdit(false);
     setFormData({
@@ -158,7 +143,7 @@ useEffect(() => {
       state: "",
       city: "",
       address: "",
-      image: "",
+      image: null,
       imageName: "",
     });
     setErrors({});
@@ -176,10 +161,10 @@ useEffect(() => {
       countryCode: user.countryCode || "+91",
       contact: user.contact || "",
       state: user.state || "",
-      city: user.city || "", 
+      city: user.city || "",
       address: user.address || "",
-      image: user.image || "",
-      imageName: user.imageName || "",
+      image: user.image || null,
+      imageName: "",
     });
     setErrors({});
     setOpen(true);
@@ -209,30 +194,51 @@ useEffect(() => {
 
     const loggedUser = JSON.parse(localStorage.getItem("user"));
 
-    const payload = {
-      ...formData,
-      ownerId: loggedUser.id, 
-    };
+    const data = new FormData();
+    data.append("name", formData.name);
+    data.append("email", formData.email);
+    data.append("gender", formData.gender);
+    data.append("country", formData.country);
+    data.append("countryCode", formData.countryCode);
+    data.append("contact", formData.contact);
+    data.append("state", formData.state);
+    data.append("city", formData.city);
+    data.append("address", formData.address);
+    data.append("ownerId", loggedUser.id);
+
+    if (formData.image instanceof File) {
+      data.append("image", formData.image);
+    } else if (formData.image) {
+      data.append("image", formData.image);
+    }
 
     try {
       if (isEdit) {
-        await axios.put(`${API_URL}/${currentId}`, payload);
+        await axios.put(`${API_URL}/${currentId}`, data);
       } else {
-        await axios.post(API_URL, payload);
+        await axios.post(API_URL, data);
       }
-
       setOpen(false);
-      // setPage(0); 
-      await loadUsers(); 
+      await refreshUsers();
     } catch (err) {
       console.error("Save error:", err);
     }
   };
 
-  const handleDelete = async (id) => {
+  
+  const handleDeleteClick = (id) => {
+    setDeleteTargetId(id);
+    setDeleteDialogOpen(true);
+  };
+
+
+  const handleDeleteConfirm = async () => {
     try {
-      await axios.delete(`${API_URL}/${id}`);
-      setPage(0); 
+      await axios.delete(`${API_URL}/${deleteTargetId}`);
+      setDeleteDialogOpen(false);
+      setDeleteTargetId(null);
+      setPage(0);
+      await refreshUsers();
     } catch (err) {
       console.error("Delete error:", err);
     }
@@ -244,17 +250,11 @@ useEffect(() => {
     setPage(0);
   };
 
-
-
-
   return (
     <>
-    
-
       <Box p={4}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Button variant="contained" onClick={handleOpenAdd}>Add User</Button>
-
           <TextField
             size="small"
             placeholder="Search"
@@ -269,54 +269,55 @@ useEffect(() => {
 
         <Paper>
           <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Profile Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Gender</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Country</TableCell>
-                <TableCell>State</TableCell>
-                <TableCell>City</TableCell>
-                <TableCell>Address</TableCell>
-                <TableCell align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell
-                    sx={{ cursor: "pointer", color: "blue", display: "flex", alignItems: "center", gap: 1 }}
-                    onClick={() => navigate(`/user-details/${user.id}`)}
-                  >
-                    {user.image && (
-                      <img
-                        src={user.image}
-                        alt={user.name}
-                        style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }}
-                      />
-                    )}
-                    {user.name}
-                  </TableCell>
-
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.gender}</TableCell>
-                  <TableCell>{user.countryCode} {user.contact}</TableCell>
-                  <TableCell>{user.country}</TableCell>
-                  <TableCell>{user.state}</TableCell>
-                  <TableCell>{user.city}</TableCell>
-                  <TableCell>{user.address}</TableCell>
-
-                  <TableCell align="center">
-                    <Button size="small" onClick={() => handleEdit(user)}>Edit</Button>
-                    <Button size="small" color="error" onClick={() => handleDelete(user.id)}>Delete</Button>
-                  </TableCell>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Profile Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Gender</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Country</TableCell>
+                  <TableCell>State</TableCell>
+                  <TableCell>City</TableCell>
+                  <TableCell>Address</TableCell>
+                  <TableCell align="center">Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHead>
+
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell
+                      sx={{ cursor: "pointer", color: "blue", display: "flex", alignItems: "center", gap: 1 }}
+                      onClick={() => navigate(`/user-details/${user.id}`)}
+                    >
+                      {user.image && (
+                        <img
+                          src={user.image}
+                          alt={user.name}
+                          style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }}
+                        />
+                      )}
+                      {user.name}
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.gender}</TableCell>
+                    <TableCell>{user.countryCode} {user.contact}</TableCell>
+                    <TableCell>{user.country}</TableCell>
+                    <TableCell>{user.state}</TableCell>
+                    <TableCell>{user.city}</TableCell>
+                    <TableCell>{user.address}</TableCell>
+                    <TableCell align="center">
+                      <Button size="small" onClick={() => handleEdit(user)}>Edit</Button>
+                     
+                      <Button size="small" color="error" onClick={() => handleDeleteClick(user.id)}>
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </TableContainer>
         </Paper>
 
@@ -331,7 +332,6 @@ useEffect(() => {
         />
       </Box>
 
-   
       {/* Add / Edit Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth>
         <DialogTitle>{isEdit ? "Edit User" : "Add User"}</DialogTitle>
@@ -365,7 +365,8 @@ useEffect(() => {
             </Select>
             {errors.gender && <Box color="error.main" fontSize="12px">{errors.gender}</Box>}
 
-            {!formData.image ? (
+            {/* Image Upload */}
+            {!(formData.image instanceof File) && !formData.image ? (
               <Button component="label" variant="outlined">
                 Upload Image
                 <input
@@ -375,24 +376,32 @@ useEffect(() => {
                   onChange={e => {
                     const file = e.target.files[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () =>
-                        setFormData(prev => ({ ...prev, image: reader.result, imageName: file.name }));
-                      reader.readAsDataURL(file);
+                      setFormData(prev => ({ ...prev, image: file, imageName: file.name }));
                     }
                   }}
                 />
               </Button>
             ) : (
               <Box display="flex" alignItems="center" gap={2}>
-                <Box fontSize="14px">{formData.imageName}</Box>
+                <img
+                  src={
+                    formData.image instanceof File
+                      ? URL.createObjectURL(formData.image)
+                      : formData.image
+                  }
+                  alt="preview"
+                  style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
+                />
+                <Box fontSize="14px">
+                  {formData.image instanceof File ? formData.imageName : "Current image"}
+                </Box>
                 <Button
                   size="small"
                   color="error"
                   variant="outlined"
-                  onClick={() => setFormData(prev => ({ ...prev, image: "", imageName: "" }))}
+                  onClick={() => setFormData(prev => ({ ...prev, image: null, imageName: "" }))}
                 >
-                  Delete
+                  Remove
                 </Button>
               </Box>
             )}
@@ -435,7 +444,7 @@ useEffect(() => {
             <Autocomplete
               options={countries.map(c => c.name)}
               value={formData.country}
-              onChange={(e, v) => setFormData(prev => ({ ...prev, country: v }))}
+              onChange={(e, v) => setFormData(prev => ({ ...prev, country: v, state: "", city: "" }))}
               renderInput={(params) => (
                 <TextField {...params} label="Country" error={!!errors.country} helperText={errors.country} />
               )}
@@ -444,7 +453,7 @@ useEffect(() => {
             <Autocomplete
               options={statesList.map(s => s.name)}
               value={formData.state}
-              onChange={(e, v) => setFormData(prev => ({ ...prev, state: v }))}
+              onChange={(e, v) => setFormData(prev => ({ ...prev, state: v, city: "" }))}
               renderInput={(params) => (
                 <TextField {...params} label="State" error={!!errors.state} helperText={errors.state} />
               )}
@@ -466,9 +475,24 @@ useEffect(() => {
           <Button onClick={handleSave} color="success">{isEdit ? "Update" : "Save"}</Button>
         </DialogActions>
       </Dialog>
+
+      {/*  Confirm Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Contact</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this contact? 
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={handleDeleteConfirm}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
 
 export default Users;
-
