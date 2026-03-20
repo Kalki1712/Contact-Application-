@@ -4,6 +4,7 @@ const axiosInstance = axios.create({
   baseURL: "http://localhost:5000",
 });
 
+
 // Auto-attach token to every request
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
@@ -12,6 +13,7 @@ axiosInstance.interceptors.request.use((config) => {
   }
   return config;
 });
+
 
 // Auto-logout on 401 (token expired or invalid)
 axiosInstance.interceptors.response.use(

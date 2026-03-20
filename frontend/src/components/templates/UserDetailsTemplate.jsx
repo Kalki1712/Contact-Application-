@@ -1,28 +1,6 @@
-import { useEffect, useState } from "react";
 import { Box, Typography, Paper, Button } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "../axiosInstance";
 
-const UserDetails = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get(`/users/details/${id}`);
-        setUser(res.data);
-      } catch (err) {
-        console.error("Error fetching user:", err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, [id]);
+const UserDetailsTemplate = ({ user, loading, onBack }) => {
 
   if (loading) {
     return <Box p={4}><Typography>Loading...</Typography></Box>;
@@ -32,20 +10,18 @@ const UserDetails = () => {
     return (
       <Box p={4}>
         <Typography variant="h6" color="error">No user data found!</Typography>
-        <Button variant="contained" onClick={() => navigate("/users")}>Go Back</Button>
+        <Button variant="contained" onClick={onBack}>Go Back</Button>
       </Box>
     );
   }
 
   return (
     <Box p={4}>
-      <Button variant="contained" onClick={() => navigate("/users")}>
+      <Button variant="contained" onClick={onBack}>
         Back to Users
       </Button>
-
       <Paper sx={{ mt: 3, p: 3, maxWidth: 600 }}>
         <Typography variant="h5" mb={2}>User Details</Typography>
-
         {user.image && (
           <Box mb={2}>
             <img
@@ -55,7 +31,6 @@ const UserDetails = () => {
             />
           </Box>
         )}
-
         <Typography><strong>Name:</strong> {user.name}</Typography>
         <Typography><strong>Email:</strong> {user.email}</Typography>
         <Typography><strong>Gender:</strong> {user.gender}</Typography>
@@ -63,7 +38,6 @@ const UserDetails = () => {
         <Typography><strong>Country:</strong> {user.country}</Typography>
         <Typography><strong>State:</strong> {user.state}</Typography>
         <Typography><strong>City:</strong> {user.city}</Typography>
-
         <Typography mt={2}><strong>Address:</strong></Typography>
         <Typography
           sx={{ whiteSpace: "pre-line", border: "1px solid #ccc", p: 1, borderRadius: 1 }}
@@ -75,4 +49,4 @@ const UserDetails = () => {
   );
 };
 
-export default UserDetails;
+export default UserDetailsTemplate;
