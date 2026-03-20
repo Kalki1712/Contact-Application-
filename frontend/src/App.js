@@ -1,22 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./components/Login";
-import Signup from "./components/Signup";
-import Users from "./components/Users";
-import UserDetails from "./components/UserDetails";
-import ProtectedRoute from "./components/ProtectedRoute";
-import PublicRoute from "./components/PublicRoute";
-import Settings from "./components/Settings";
-import Layout from  "./components/Layout";
+import Login from "./screens/Login";
+import Signup from "./screens/Signup";
+import Users from "./screens/Users";
+import UserDetails from "./screens/UserDetails";
+import Settings from "./screens/Settings";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
+import Layout from "./layouts/Layout";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Default Redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Public Routes */}
         <Route
           path="/login"
           element={
@@ -35,7 +33,6 @@ function App() {
           }
         />
 
-        {/* Protected Routes WITH Navbar */}
         <Route
           element={
             <ProtectedRoute>
@@ -48,7 +45,6 @@ function App() {
           <Route path="/settings" element={<Settings />} />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
       </Routes>
@@ -60,73 +56,28 @@ export default App;
 
 
 
-// import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-// import Login from "./components/Login"
-// import Signup from "./components/Signup"
-// import Users from "./components/Users"
-// import UserDetails from "./components/UserDetails"
-// import ProtectedRoute from "./components/ProtectedRoute"
-// import PublicRoute from "./components/PublicRoute"
-// import Settings from "./components/Settings"
-
-// function App() {
-//   return (
-//     <BrowserRouter>
-//       <Routes>
-//         <Route path="/" element={<Navigate to="/login" replace />} />
-
-//         <Route
-//           path="/login"
-//           element={
-//             <PublicRoute>
-//               <Login />
-//             </PublicRoute>
-//           }
-//         />
-
-//         <Route
-//           path="/signup"
-//           element={
-//             <PublicRoute>
-//               <Signup />
-//             </PublicRoute>
-//           }
-//         />
-
-//         <Route
-//           path="/users"
-//           element={
-//             <ProtectedRoute>
-//               <Users />
-//             </ProtectedRoute>
-//           }
-//         />
-
-//         <Route
-//           path="/user-details/:id"
-//           element={
-//             <ProtectedRoute>
-//               <UserDetails />
-//             </ProtectedRoute>
-//           }
-//         />
-
-//            <Route
-//           path="/settings"
-//           element={
-//             <ProtectedRoute>
-//               <Settings />
-//             </ProtectedRoute>
-//           }
-//         />
 
 
-//         <Route path="*" element={<Navigate to="/login" replace />} />
-//       </Routes>
-//     </BrowserRouter>
-//   )
-// }
 
-// export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

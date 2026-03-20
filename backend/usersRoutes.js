@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("./db");
+const verifyToken = require("./authMiddleware");
+const upload = require("./multerConfig");
 
-// GET users with pagination & search
-router.get("/:ownerId", async (req, res) => {
+
+router.get("/:ownerId", verifyToken, async (req, res) => {
   const { ownerId } = req.params;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 5;
@@ -43,12 +45,7 @@ router.get("/:ownerId", async (req, res) => {
       [ownerId, `%${search}%`, `%${search}%`, limit, offset]
     );
 
-    res.json({
-      users: result.rows,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    });
+    res.json({ users: result.rows, total, page, totalPages: Math.ceil(total / limit) });
 
   } catch (err) {
     console.error("Error fetching users:", err);
@@ -56,13 +53,10 @@ router.get("/:ownerId", async (req, res) => {
   }
 });
 
-// GET single user
-router.get("/details/:id", async (req, res) => {
+
+router.get("/details/:id", verifyToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM users WHERE id = $1",
-      [req.params.id]
-    );
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [req.params.id]);
     res.json(result.rows[0] || null);
   } catch (err) {
     console.error(err);
@@ -70,13 +64,17 @@ router.get("/details/:id", async (req, res) => {
   }
 });
 
-// ADD user
-router.post("/", async (req, res) => {
+
+router.post("/", verifyToken, upload.single("image"), async (req, res) => {
   const {
     name, email, gender, country,
     countryCode, contact, state,
-    city, address, image, ownerId
+    city, address, ownerId
   } = req.body;
+
+  const image = req.file
+    ? `http://localhost:5000/uploads/${req.file.filename}`
+    : null; 
 
   try {
     const result = await pool.query(
@@ -84,11 +82,7 @@ router.post("/", async (req, res) => {
        (name,email,gender,country,country_code,contact,state,city,address,image,owner_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
-      [
-        name, email, gender, country,
-        countryCode, contact, state,
-        city, address, image, ownerId
-      ]
+      [name, email, gender, country, countryCode, contact, state, city, address, image, ownerId]
     );
 
     res.status(201).json(result.rows[0]);
@@ -98,14 +92,18 @@ router.post("/", async (req, res) => {
   }
 });
 
-// UPDATE user
-router.put("/:id", async (req, res) => {
+
+router.put("/:id", verifyToken, upload.single("image"), async (req, res) => {
   const { id } = req.params;
   const {
     name, email, gender, country,
     countryCode, contact, state,
-    city, address, image
+    city, address
   } = req.body;
+
+  const image = req.file
+    ? `http://localhost:5000/uploads/${req.file.filename}`
+    : req.body.image || null;
 
   try {
     const result = await pool.query(
@@ -114,11 +112,7 @@ router.put("/:id", async (req, res) => {
        country_code=$5,contact=$6,state=$7,
        city=$8,address=$9,image=$10
        WHERE id=$11 RETURNING *`,
-      [
-        name, email, gender, country,
-        countryCode, contact, state,
-        city, address, image, id
-      ]
+      [name, email, gender, country, countryCode, contact, state, city, address, image, id]
     );
 
     res.json(result.rows[0]);
@@ -128,8 +122,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// DELETE user
-router.delete("/:id", async (req, res) => {
+
+router.delete("/:id", verifyToken, async (req, res) => {
   try {
     await pool.query("DELETE FROM users WHERE id=$1", [req.params.id]);
     res.sendStatus(204);
