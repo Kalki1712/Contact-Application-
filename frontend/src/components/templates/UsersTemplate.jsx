@@ -106,7 +106,7 @@ const UsersTemplate = ({
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer>  
         </Paper>
 
         <TablePagination
