@@ -46,11 +46,10 @@ const AppBarHeader = ({ onHomeClick, title, rightSlot }) => {
     <div className="sticky top-0 z-40 w-full 
                     bg-blue-600 text-white shadow-md">
 
-      //  Toolbar 
+  
       <div className="relative flex items-center 
                       px-4 py-2 h-16">
 
-        //  Home Icon 
         <button
           onClick={onHomeClick}
           className="p-2 rounded-full mr-2
@@ -60,7 +59,7 @@ const AppBarHeader = ({ onHomeClick, title, rightSlot }) => {
           <HomeIcon />
         </button>
 
-        //  Center Title 
+      
         <span
           onClick={onHomeClick}
           className="absolute left-1/2 -translate-x-1/2
@@ -69,9 +68,9 @@ const AppBarHeader = ({ onHomeClick, title, rightSlot }) => {
                      transition-opacity duration-200"
         >
           {title}
-        </span>
+        </span> 
 
-        //  Right Slot 
+       
         <div className="ml-auto">
           {rightSlot}
         </div>

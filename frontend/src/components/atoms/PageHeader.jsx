@@ -11,7 +11,7 @@ const PageHeader = ({ title, onBack }) => {
         <ArrowBackIcon />
       </button>
       <h5 className="text-xl font-bold">
-        {title}
+        {title}  
       </h5>
     </div>
   );

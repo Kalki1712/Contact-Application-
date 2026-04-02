@@ -5,6 +5,7 @@ import useLogin from "../hooks/useLogin";
 const Login = () => {
   const navigate = useNavigate();
   const { formData, setFormData, errors, handleLogin } = useLogin();
+  console.log("Login form data:", formData);
 
   return (
     <LoginTemplate
