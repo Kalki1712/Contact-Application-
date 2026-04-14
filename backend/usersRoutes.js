@@ -12,7 +12,7 @@ router.get("/:ownerId", verifyToken, async (req, res) => {
   const search = req.query.search || "";
   const offset = (page - 1) * limit;
 
-  try {
+  try { 
     const totalResult = await pool.query(
       `SELECT COUNT(*) FROM users
        WHERE owner_id = $1
@@ -132,5 +132,39 @@ router.delete("/:id", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Error deleting user" });
   }
 });
+
+
+router.post("/import", verifyToken, async (req, res) => {
+  const { users } = req.body;
+  const ownerId = req.user.id;
+
+  try {
+    for (const data of users) {
+      await pool.query(
+        `INSERT INTO users 
+        (name, email, gender, country, country_code, contact, state, city, address, owner_id)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          data.name,
+          data.email,
+          data.gender,
+          data.country,
+          data.countryCode,
+          data.contact,
+          data.state,
+          data.city,
+          data.address,
+          ownerId,
+        ]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Import error:", err);
+    res.status(500).json({ message: "Import failed" });
+  }
+});
+
 
 module.exports = router;
